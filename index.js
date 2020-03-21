@@ -1,9 +1,32 @@
+// States
+//  1. Import Data from Source
+
+
 const express = require('express')
 const bodyParser = require('body-parser');
+var proxy = require('express-http-proxy');
 
 const app = express()
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+
+app.use('/public', express.static('public'))
+
+app.use('/proxy', proxy('localhost:8080', {
+    userResHeaderDecorator(headers, userReq, userRes, proxyReq, proxyRes) {
+        // recieves an Object of headers, returns an Object of headers.
+        headers['Access-Control-Allow-Origin'] = "*"
+        headers['Access-Control-Allow-Headers'] = "Origin, X-Requested-With, Content-Type, Accept"
+
+        return headers;
+    }
+}));
+
+// app.all('/*', function(req, res, next) {
+//     res.header("Access-Control-Allow-Origin", "*");
+//     next();
+//   });
+
 const port = 3000
 
 const MongoClient = require('mongodb').MongoClient;
@@ -68,6 +91,7 @@ app.post('/addproduct', (req, res) => {
 
     collection_products.insertMany([{
         name,
+        state: 1,
         timestamp: Date.now(),
     }]);
 
@@ -78,6 +102,23 @@ app.get('/getproducts', async (req, res, next) => {
     try {
         let result = await collection_products.find().sort({ timestamp: -1 }).limit(5).toArray()
         res.send(result);
+    } catch (err) {
+        console.error(err)
+        next(err)
+    }
+})
+
+app.post('/updatestatus', async (req, res, next) => {
+    try {
+        let status = req.body["status"]
+        let completed = req.body["completed"]
+        let productId = req.body["productId"]
+
+        console.log(status, completed, productId)
+
+        await collection_products.findOneAndUpdate({ _id: productId }, { '$set': { state: 2 } })
+
+        res.send({ 'good': 'yes' })
     } catch (err) {
         console.error(err)
         next(err)
