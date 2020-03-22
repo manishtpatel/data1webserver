@@ -22,14 +22,10 @@ app.use('/proxy', proxy('localhost:8080', {
     }
 }));
 
-// app.all('/*', function(req, res, next) {
-//     res.header("Access-Control-Allow-Origin", "*");
-//     next();
-//   });
-
 const port = 3000
 
 const MongoClient = require('mongodb').MongoClient;
+var ObjectID = require('mongodb').ObjectID
 const assert = require('assert');
 
 // Connection URL
@@ -108,15 +104,30 @@ app.get('/getproducts', async (req, res, next) => {
     }
 })
 
+app.get('/getproduct/:productId', async (req, res, next) => {
+    try {
+        let productId = req.params["productId"]
+        var objectId = new ObjectID(productId);
+
+        console.log(productId)
+
+        let result = await collection_products.find({ _id: objectId }).toArray()
+        res.send(result);
+    } catch (err) {
+        console.error(err)
+        next(err)
+    }
+})
+
 app.post('/updatestatus', async (req, res, next) => {
     try {
-        let status = req.body["status"]
-        let completed = req.body["completed"]
+        let state = parseFloat(req.body["state"])
         let productId = req.body["productId"]
+        var objectId = new ObjectID(productId);
 
-        console.log(status, completed, productId)
+        console.log(state, productId)
 
-        await collection_products.findOneAndUpdate({ _id: productId }, { '$set': { state: 2 } })
+        await collection_products.findOneAndUpdate({ _id: objectId }, { '$set': { state } })
 
         res.send({ 'good': 'yes' })
     } catch (err) {
