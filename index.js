@@ -136,5 +136,22 @@ app.post('/updatestatus', async (req, res, next) => {
     }
 })
 
+app.post('/productdata', async (req, res, next) => {
+    try {
+        let SaleCondition = req.body["SaleCondition"]
+        let productId = req.body["productId"]
+        var objectId = new ObjectID(productId);
+
+        console.log(SaleCondition, productId)
+
+        await collection_products.findOneAndUpdate({ _id: objectId }, { '$set': { SaleCondition } })
+
+        res.send({ 'good': 'yes' })
+    } catch (err) {
+        console.error(err)
+        next(err)
+    }
+})
+
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
